@@ -86,6 +86,22 @@ Campos monetários são armazenados com `Decimal128`, evitando a utilização di
 - Identificação de produtos com estoque igual ou inferior a 30 unidades.
 - Auditoria da estrutura e dos dados armazenados.
 
+
+### Concatenação de dados
+
+A aplicação realiza a concatenação de registros das coleções `pedidos` e `entregas`, utilizando Python.
+
+Os registros são organizados em uma estrutura comum e combinados por meio do operador `+`, formando uma única lista apresentada em uma tabela no dashboard Streamlit.
+
+A visualização apresenta:
+- Registros de pedidos e entregas.
+- Origem de cada registro.
+- Número do pedido e status.
+- Data e informações complementares.
+- Quantidade de registros por origem e total concatenado.
+
+Essa funcionalidade demonstra a combinação de conjuntos de dados provenientes de diferentes coleções MongoDB em uma única visualização.
+
 ## 6. Estrutura dos arquivos
 
 A estrutura principal do projeto está organizada da seguinte forma:

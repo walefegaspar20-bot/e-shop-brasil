@@ -690,7 +690,108 @@ try:
 
     else:
         st.info("Não existem produtos cadastrados.")
+    # Concatenação de dados de pedidos e entregas
+    st.divider()
+    st.subheader("Concatenação de dados: pedidos e entregas")
+    st.caption(
+        "Combinação dos registros de pedidos e entregas em uma única tabela."
+    )
 
+    pedidos_concat = list(
+        db.pedidos.find(
+            {},
+            {
+                "_id": 1,
+                "numero_pedido": 1,
+                "status": 1,
+                "data_pedido": 1,
+                "valor_total": 1
+            }
+        ).sort("numero_pedido", ASCENDING)
+    )
+
+    entregas_concat = list(
+        db.entregas.find(
+            {},
+            {
+                "_id": 0,
+                "pedido_id": 1,
+                "status": 1,
+                "data_envio": 1,
+                "transportadora": 1,
+                "codigo_rastreio": 1
+            }
+        )
+    )
+
+    pedidos_por_id = {
+        pedido["_id"]: pedido for pedido in pedidos_concat
+    }
+
+    registros_pedidos = []
+    for pedido in pedidos_concat:
+        valor_total = pedido.get("valor_total")
+        valor_formatado = (
+            f"R$ {float(valor_total.to_decimal()):,.2f}"
+            if valor_total is not None
+            else "Não informado"
+        )
+        data_pedido = pedido.get("data_pedido")
+        registros_pedidos.append({
+            "Origem": "Pedido",
+            "Número do pedido": pedido.get("numero_pedido", ""),
+            "Status": pedido.get("status", ""),
+            "Data": (
+                data_pedido.strftime("%d/%m/%Y %H:%M")
+                if data_pedido else "Não informada"
+            ),
+            "Detalhes": f"Valor total: {valor_formatado}"
+        })
+
+    registros_entregas = []
+    for entrega in entregas_concat:
+        pedido_relacionado = pedidos_por_id.get(
+            entrega.get("pedido_id"), {}
+        )
+        data_envio = entrega.get("data_envio")
+        codigo_rastreio = entrega.get("codigo_rastreio")
+        transportadora = entrega.get(
+            "transportadora", "Não informada"
+        )
+
+        detalhes_entrega = transportadora
+        if codigo_rastreio:
+            detalhes_entrega += f" | Rastreio: {codigo_rastreio}"
+
+        registros_entregas.append({
+            "Origem": "Entrega",
+            "Número do pedido": pedido_relacionado.get(
+                "numero_pedido", "Pedido não localizado"
+            ),
+            "Status": entrega.get("status", ""),
+            "Data": (
+                data_envio.strftime("%d/%m/%Y %H:%M")
+                if data_envio else "Não enviada"
+            ),
+            "Detalhes": detalhes_entrega
+        })
+
+    # Concatenação explícita das duas listas de registros
+    dados_concatenados = registros_pedidos + registros_entregas
+
+    coluna_concat1, coluna_concat2, coluna_concat3 = st.columns(3)
+    coluna_concat1.metric("Pedidos", len(registros_pedidos))
+    coluna_concat2.metric("Entregas", len(registros_entregas))
+    coluna_concat3.metric("Total concatenado", len(dados_concatenados))
+
+    if dados_concatenados:
+        st.dataframe(
+            dados_concatenados,
+            width="stretch",
+            hide_index=True
+        )
+    else:
+        st.info("Não há pedidos ou entregas para concatenar.")
 
 except PyMongoError as erro:
     st.error(f"Não foi possível acessar o MongoDB: {erro}")
